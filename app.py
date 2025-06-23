@@ -2,6 +2,9 @@ from flask import Flask, request, render_template, redirect, url_for
 import os
 from werkzeug.utils import secure_filename
 from main import load_vendor_codes, wb_get_all, dump_filtered
+from flask import Flask, request, render_template, redirect, url_for, jsonify
+from main import run_transfer, log_message, LOG_STORE
+
 
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -27,6 +30,12 @@ def index():
             log = f"Найдено {len(wb_need)} карточек"
         return render_template("index.html", log=log)
     return render_template("index.html", log=log)
+
+
+@app.route("/logs")
+def logs():
+    return jsonify(LOG_STORE)
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
