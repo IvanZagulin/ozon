@@ -13,5 +13,22 @@
   {% if log %}
     <p><strong>Результат:</strong> {{ log }}</p>
   {% endif %}
+
+  <h2>Логи выполнения:</h2>
+<pre id="logs" style="background:#eee; padding:1em; height:300px; overflow-y:auto;"></pre>
+
+<script>
+function fetchLogs() {
+  fetch("/logs")
+    .then(response => response.json())
+    .then(data => {
+      const logs = document.getElementById("logs");
+      logs.textContent = data.join("\n");
+      logs.scrollTop = logs.scrollHeight; // автопрокрутка вниз
+    });
+}
+
+setInterval(fetchLogs, 1500); // обновление каждые 1.5 секунды
+</script>
 </body>
 </html>
