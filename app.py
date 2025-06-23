@@ -1,7 +1,7 @@
 from flask import Flask, request, render_template, redirect, url_for
 import os
 from werkzeug.utils import secure_filename
-from main import load_vendor_codes, wb_get_all, dump_filtered
+from main import load_vendor_codes, wb_get_all_parts as wb_get_all, dump_filtered
 from flask import Flask, request, render_template, redirect, url_for, jsonify
 from main import run_transfer, log_message, LOG_STORE
 
