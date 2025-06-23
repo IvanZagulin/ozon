@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Импорт карточек</title>
+</head>
+<body>
+  <h1>Загрузка файла с артикулами</h1>
+  <form method="POST" enctype="multipart/form-data">
+    <input type="file" name="file" required>
+    <button type="submit">Загрузить</button>
+  </form>
+  {% if log %}
+    <p><strong>Результат:</strong> {{ log }}</p>
+  {% endif %}
+</body>
+</html>
