@@ -17,6 +17,14 @@ BASE_URL = "https://api-seller.ozon.ru"
 HEADERS  = {"Client-Id": CLIENT_ID, "Api-Key": API_KEY, "Content-Type": "application/json"}
 FIXED_PRICE, CURRENCY_CODE = "500", "RUB"
 POLL_ATTEMPTS = 18
+
+LOG_STORE = []
+
+def log_message(msg):
+    print(msg)
+    LOG_STORE.append(f"{datetime.now():%H:%M:%S} — {msg}")
+    if len(LOG_STORE) > 500:
+        LOG_STORE.pop(0)
 # ───────────────────── 1. vendorCode из Excel ───────────────────
 def load_vendor_codes(xlsx="articuls.xlsx") -> set[str]:
     df = pd.read_excel(xlsx, dtype=str)
@@ -24,7 +32,7 @@ def load_vendor_codes(xlsx="articuls.xlsx") -> set[str]:
         if col.strip().lower() in ("артикулы", "артикул", "vendorcode"):
             codes = df[col].dropna().astype(str).str.strip()
             return set(codes)
-    print("❗ В Excel не нашёлся столбец «артикулы»") ; sys.exit(1)
+    log_message("❗ В Excel не нашёлся столбец «артикулы»") ; sys.exit(1)
 
 # ───────────────────── 2. тянем ВСЕ карточки WB ─────────────────
 def wb_get_all(limit=100):
@@ -36,7 +44,7 @@ def wb_get_all(limit=100):
         r.raise_for_status()
         page = r.json().get("cards", [])
         all_cards.extend(page)
-        print(f"WB → +{len(page)} (итого {len(all_cards)})")
+        log_message(f"WB → +{len(page)} (итого {len(all_cards)})")
         if len(page) < limit: break
         last = page[-1]
         cursor = {"updatedAt": last["updatedAt"], "nmID": last["nmID"]}
@@ -48,7 +56,7 @@ def dump_filtered(cards, vcodes:set):
     fname = f"wb_cards_{datetime.now():%Y-%m-%d}.json"
     pathlib.Path(fname).write_text(json.dumps(keep,ensure_ascii=False,indent=2),
                                    encoding="utf-8")
-    print(f"✔ Сохранил {len(keep)} карточек в {fname}")
+    log_message(f"✔ Сохранил {len(keep)} карточек в {fname}")
     return keep
 
 # 1. Короткий список категорий (оставил самые нужные)
@@ -244,7 +252,7 @@ def build_ozon_card(wb:dict, desc:int, typ:int, attrs:list[dict]) -> dict:
 def import_card(card):
     r=requests.post(BASE_URL+"/v3/product/import",
                     headers=HEADERS,json={"items":[card]},timeout=30)
-    print("\nОтвет OZON:", r.status_code, r.text)
+    log_message("\nОтвет OZON:", r.status_code, r.text)
     r.raise_for_status()
     return str(r.json()["result"]["task_id"])
 
@@ -266,30 +274,7 @@ def ozon_poll(task_id:str):
                              headers=OZ_HEAD, json={"task_id":task_id},
                              timeout=15).json()
         status = info["result"].get("status")
-        print(f"[{i}] {status}")
+        log_message(f"[{i}] {status}")
         if info["result"].get("items"): return info
     return info
 
-
-def run_transfer(filepath):
-    vcodes = load_vendor_codes(filepath)
-    wb_all = wb_get_all()
-    wb_need = dump_filtered(wb_all, vcodes)
-    if not wb_need:
-        print("⛔ Ничего не найдено по этим vendorCode")
-        return
-
-    for idx in range(0, len(wb_need), 100):
-        batch = wb_need[idx:idx+100]
-        oz_cards = []
-        for wb in batch:
-            desc, typ = choose_cat(wb["title"])
-            attrs     = get_attrs(desc, typ)
-            oz_cards.append(build_ozon_card(wb, desc, typ, attrs))
-
-        print(f"\n► Отправляю партию {idx//100+1}: {len(oz_cards)} шт.")
-        task = ozon_import_batch(oz_cards)
-        result = ozon_poll(task)
-        pathlib.Path(f"ozon_result_{task}.json").write_text(
-            json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
-        print(f"✔ Завершена партия, лог в ozon_result_{task}.json")
