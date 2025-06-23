@@ -14,18 +14,19 @@
     <p><strong>Результат:</strong> {{ log }}</p>
   {% endif %}
 
-  <h2>Логи выполнения:</h2>
-<pre id="logs" style="background:#eee; padding:1em; height:300px; overflow-y:auto;"></pre>
+<h2>Логи выполнения:</h2>
+<pre id="logs" style="background:#f5f5f5; padding:1em; height:300px; overflow:auto;"></pre>
 
 <script>
+const logsDiv = document.getElementById("logs");
 function updateLogs() {
-  fetch('/logs')
-    .then(response => response.text())
+  fetch("/logs")
+    .then(res => res.json())
     .then(data => {
-      document.getElementById('logs').textContent = data;
+      logsDiv.textContent = data.logs.join("\n");
     });
 }
-setInterval(updateLogs, 2000);
+setInterval(updateLogs, 3000);
 updateLogs();
 </script>
 </body>
