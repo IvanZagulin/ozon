@@ -278,3 +278,26 @@ def ozon_poll(task_id:str):
         if info["result"].get("items"): return info
     return info
 
+def run_transfer(filepath):
+    log_message(f"📥 Загружен файл: {filepath}")
+    vcodes = load_vendor_codes(filepath)
+    wb_all = wb_get_all()
+    wb_need = dump_filtered(wb_all, vcodes)
+    if not wb_need:
+        log_message("⛔ Ничего не найдено по этим vendorCode")
+        return
+
+    for idx in range(0, len(wb_need), 100):
+        batch = wb_need[idx:idx+100]
+        oz_cards = []
+        for wb in batch:
+            desc, typ = choose_cat(wb["title"])
+            attrs = get_attrs(desc, typ)
+            oz_cards.append(build_ozon_card(wb, desc, typ, attrs))
+
+        log_message(f"► Отправляю партию {idx//100+1}: {len(oz_cards)} шт.")
+        task = ozon_import_batch(oz_cards)
+        result = ozon_poll(task)
+        result_path = f"ozon_result_{task}.json"
+        pathlib.Path(result_path).write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+        log_message(f"✔ Завершена партия, лог сохранён в {result_path}")
