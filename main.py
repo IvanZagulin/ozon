@@ -4,7 +4,7 @@ from rapidfuzz import process, fuzz
 import pandas as pd
 import json, pathlib, time, re, requests
 from groq import Groq
-
+import glob
 WB_TOKEN  = "eyJhbGciOiJFUzI1NiIsImtpZCI6IjIwMjQxMjE3djEiLCJ0eXAiOiJKV1QifQ.eyJlbnQiOjEsImV4cCI6MTc1MTkzOTcwNSwiaWQiOiIwMTk0M2JlNS1kNDIzLTc0OGQtOGM4NC01ZmMyMjA3ZDY1YzUiLCJpaWQiOjcxOTUyMDQzLCJvaWQiOjI3NjkwNywicyI6NzkzNCwic2lkIjoiZDMyZjgyMjQtNjY4Mi00ZmI2LWJkNWUtMDU3ZjA3NmE5NjllIiwidCI6ZmFsc2UsInVpZCI6NzE5NTIwNDN9.9piJOR1Z9w9kRx5KSZKJ5aN1yG4clHaCUF9oujD5buYQIZf_5c9tB6G7rb5UOL-ZoQGIAIWYFUM9rhhAmG-enA"                        # <= вставьте свой
 WB_URL    = "https://content-api.wildberries.ru/content/v2/get/cards/list"
 WB_HEAD   = {"Authorization": WB_TOKEN, "Content-Type": "application/json"}
@@ -34,20 +34,13 @@ def load_vendor_codes(xlsx="articuls.xlsx") -> set[str]:
             return set(codes)
     log_message("❗ В Excel не нашёлся столбец «артикулы»") ; sys.exit(1)
 
-# ───────────────────── 2. тянем ВСЕ карточки WB ─────────────────
-def wb_get_all(limit=100):
-    all_cards, cursor = [], {"updatedAt": None, "nmID": None}
-    while True:
-        body = {"settings":{"cursor":{"limit":limit, **cursor},
-                            "filter":{"withPhoto":-1}}}
-        r = requests.post(WB_URL, headers=WB_HEAD, json=body, timeout=15)
-        r.raise_for_status()
-        page = r.json().get("cards", [])
-        all_cards.extend(page)
-        log_message(f"WB → +{len(page)} (итого {len(all_cards)})")
-        if len(page) < limit: break
-        last = page[-1]
-        cursor = {"updatedAt": last["updatedAt"], "nmID": last["nmID"]}
+# ───────────────────── 2. тянем ВСЕ карточки с WB ─────────────────
+def wb_get_all_parts() -> list[dict]:
+    all_cards = []
+    for filename in sorted(glob.glob("wb_cards_part*.json")):
+        with open(filename, "r", encoding="utf-8") as f:
+            all_cards.extend(json.load(f))
+    print(f"✔ Загружено карточек из частей: {len(all_cards)}")
     return all_cards
 
 # ───────────────────── 3. фильтр + сохранение ───────────────────
@@ -281,7 +274,7 @@ def ozon_poll(task_id:str):
 def run_transfer(filepath):
     log_message(f"📥 Загружен файл: {filepath}")
     vcodes = load_vendor_codes(filepath)
-    wb_all = wb_get_all()
+    wb_all = wb_get_all_parts()
     wb_need = dump_filtered(wb_all, vcodes)
     if not wb_need:
         log_message("⛔ Ничего не найдено по этим vendorCode")
