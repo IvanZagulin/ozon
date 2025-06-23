@@ -24,9 +24,8 @@ def index():
             filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
             file.save(filepath)
 
-            vcodes = load_vendor_codes(filepath)
-            wb_all = wb_get_all()
-            wb_need = dump_filtered(wb_all, vcodes)
+            hread(target=run_transfer, args=(filepath,)).start()
+            log = f"🔁 Запущен импорт карточек из файла {filename}"
             log = f"Найдено {len(wb_need)} карточек"
         return render_template("index.html", log=log)
     return render_template("index.html", log=log)
@@ -34,7 +33,7 @@ def index():
 
 @app.route("/logs")
 def get_logs():
-    return "\n".join(LOG_STORE[-200:])
+    return jsonify({"logs": LOG_STORE[-200:]})
 
 
 if __name__ == "__main__":
