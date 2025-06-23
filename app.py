@@ -24,10 +24,9 @@ def index():
             filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
             file.save(filepath)
 
-            hread(target=run_transfer, args=(filepath,)).start()
+            Thread(target=run_transfer, args=(filepath,)).start()
             log = f"🔁 Запущен импорт карточек из файла {filename}"
-            log = f"Найдено {len(wb_need)} карточек"
-        return render_template("index.html", log=log)
+
     return render_template("index.html", log=log)
 
 
