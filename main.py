@@ -41,7 +41,16 @@ def wb_get_all(limit=100):
         last = page[-1]
         cursor = {"updatedAt": last["updatedAt"], "nmID": last["nmID"]}
     return all_cards
+#______________________функция лога_______________________________
+LOG_STORE = []
 
+def log_message(text):
+    timestamp = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
+    message = f"{timestamp} {text}"
+    LOG_STORE.append(message)
+    if len(LOG_STORE) > 1000:  # чтобы не разрастался до бесконечности
+        LOG_STORE.pop(0)
+    print(message)
 # ───────────────────── 3. фильтр + сохранение ───────────────────
 def dump_filtered(cards, vcodes:set):
     keep = [c for c in cards if str(c.get("vendorCode","")).strip() in vcodes]
