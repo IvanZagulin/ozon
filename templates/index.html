@@ -18,17 +18,15 @@
 <pre id="logs" style="background:#eee; padding:1em; height:300px; overflow-y:auto;"></pre>
 
 <script>
-function fetchLogs() {
-  fetch("/logs")
-    .then(response => response.json())
+function updateLogs() {
+  fetch('/logs')
+    .then(response => response.text())
     .then(data => {
-      const logs = document.getElementById("logs");
-      logs.textContent = data.join("\n");
-      logs.scrollTop = logs.scrollHeight; // автопрокрутка вниз
+      document.getElementById('logs').textContent = data;
     });
 }
-
-setInterval(fetchLogs, 1500); // обновление каждые 1.5 секунды
+setInterval(updateLogs, 2000);
+updateLogs();
 </script>
 </body>
 </html>
