@@ -33,8 +33,8 @@ def index():
 
 
 @app.route("/logs")
-def logs():
-    return jsonify(LOG_STORE)
+def get_logs():
+    return "\n".join(LOG_STORE[-200:])
 
 
 if __name__ == "__main__":
