@@ -16,18 +16,19 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 def index():
     log = ""
     if request.method == "POST":
-        file = request.files.get("file")
-        if not file or file.filename == "":
-            log = "❗ Файл не выбран."
-        else:
-            filename = secure_filename(file.filename)
-            filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-            file.save(filepath)
+    file = request.files.get("file")
+    if not file or file.filename == "":
+        log = "❗ Файл не выбран."
+    else:
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+        file.save(filepath)
 
-            Thread(target=run_transfer, args=(filepath,)).start()
-            log = f"🔁 Запущен импорт карточек из файла {filename}"
+        Thread(target=run_transfer, args=(filepath,)).start()
+        log = f"✅ Запущен импорт карточек из файла {filename}"
 
     return render_template("index.html", log=log)
+
 
 
 @app.route("/logs")
