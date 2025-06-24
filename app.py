@@ -30,9 +30,11 @@ def index():
 
             log = f"🚀 Импорт запущен. Логи появятся ниже."
 
-    return render_template("index.html", log=log)
+    return render_template("index.html", log=log, logs=LOG_STORE)
 
-
+@app.route("/logs")
+def logs():
+    return "\n".join(LOG_STORE)
 
 
 @app.route("/logs")
