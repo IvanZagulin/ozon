@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Загрузка карточек{% endblock %}
+{% block content %}
+  <h2>Загрузка артикулов</h2>
+  <form method="POST" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".xlsx" required>
+    <button type="submit">Запустить импорт</button>
+  </form>
+
+  <h3>Последние логи</h3>
+  <pre class="log">{{ '\n'.join(logs) }}</pre>
+{% endblock %}
