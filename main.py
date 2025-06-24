@@ -5,6 +5,7 @@ import pandas as pd
 import json, pathlib, time, re, requests
 from groq import Groq
 import glob
+import os
 WB_TOKEN  = "eyJhbGciOiJFUzI1NiIsImtpZCI6IjIwMjQxMjE3djEiLCJ0eXAiOiJKV1QifQ.eyJlbnQiOjEsImV4cCI6MTc1MTkzOTcwNSwiaWQiOiIwMTk0M2JlNS1kNDIzLTc0OGQtOGM4NC01ZmMyMjA3ZDY1YzUiLCJpaWQiOjcxOTUyMDQzLCJvaWQiOjI3NjkwNywicyI6NzkzNCwic2lkIjoiZDMyZjgyMjQtNjY4Mi00ZmI2LWJkNWUtMDU3ZjA3NmE5NjllIiwidCI6ZmFsc2UsInVpZCI6NzE5NTIwNDN9.9piJOR1Z9w9kRx5KSZKJ5aN1yG4clHaCUF9oujD5buYQIZf_5c9tB6G7rb5UOL-ZoQGIAIWYFUM9rhhAmG-enA"                        # <= вставьте свой
 WB_URL    = "https://content-api.wildberries.ru/content/v2/get/cards/list"
 WB_HEAD   = {"Authorization": WB_TOKEN, "Content-Type": "application/json"}
@@ -280,25 +281,71 @@ def ozon_poll(task_id:str):
     return info
 
 def run_transfer(filepath):
-    log_message(f"📥 Загружен файл: {filepath}")
-    vcodes = load_vendor_codes(filepath)
-    wb_all = wb_get_all_parts()
-    wb_need = dump_filtered(wb_all, vcodes)
-    if not wb_need:
-        log_message("⛔ Ничего не найдено по этим vendorCode")
-        return
+    import time
+    import json
+    import os
+    import pathlib
+    from datetime import datetime
 
-    for idx in range(0, len(wb_need), 100):
-        batch = wb_need[idx:idx+100]
-        oz_cards = []
-        for wb in batch:
-            desc, typ = choose_cat(wb["title"])
-            attrs = get_attrs(desc, typ)
-            oz_cards.append(build_ozon_card(wb, desc, typ, attrs))
+    LOG_STORE.clear()  # очистка логов перед новым запуском
+    def log(msg):
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        LOG_STORE.append(f"{timestamp} — {msg}")
+        print(f"{timestamp} — {msg}")  # для отладки
 
-        log_message(f"► Отправляю партию {idx//100+1}: {len(oz_cards)} шт.")
-        task = ozon_import_batch(oz_cards)
-        result = ozon_poll(task)
-        result_path = f"ozon_result_{task}.json"
-        pathlib.Path(result_path).write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
-        log_message(f"✔ Завершена партия, лог сохранён в {result_path}")
+    log(f"📥 Загружен файл: {filepath}")
+    try:
+        vcodes = load_vendor_codes(filepath)
+        log(f"🔎 Загружено {len(vcodes)} артикулов")
+
+        wb_all = wb_get_all_parts()  # заменённая функция для GitHub JSON
+        wb_need = dump_filtered(wb_all, vcodes)
+
+        if not wb_need:
+            log("⛔ Ничего не найдено по этим vendorCode")
+            return
+
+        fname = f"wb_cards_{datetime.now().strftime('%Y-%m-%d')}.json"
+        pathlib.Path(fname).write_text(json.dumps(wb_need, ensure_ascii=False, indent=2), encoding="utf-8")
+        log(f"✔ Сохранил {len(wb_need)} карточек в {fname}")
+
+        for idx in range(0, len(wb_need), 100):
+            batch = wb_need[idx:idx + 100]
+            oz_cards = []
+            for wb in batch:
+                desc, typ = choose_cat(wb["title"])
+                attrs = get_attrs(desc, typ)
+                oz_cards.append(build_ozon_card(wb, desc, typ, attrs))
+
+            log(f"► Отправляю партию {idx // 100 + 1}: {len(oz_cards)} шт.")
+            task = ozon_import_batch(oz_cards)
+            result = ozon_poll(task)
+
+            # Логируем ошибки
+            for item in result.get("result", {}).get("items", []):
+                offer_id = item.get("offer_id")
+                status = item.get("status", "")
+                errs = item.get("errors", [])
+                if not errs:
+                    log(f"[{offer_id}] ✅ Импортировано без ошибок")
+                else:
+                    for e in errs:
+                        lvl = e.get("level", "info")
+                        attr = e.get("attribute_name", "???")
+                        msg = e.get("message", "")
+                        log(f"[{offer_id}] ⚠ {lvl.upper()} по полю '{attr}': {msg}")
+
+            res_file = f"ozon_result_{task}.json"
+            pathlib.Path(res_file).write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+            log(f"✔ Завершена партия, лог сохранён в {res_file}")
+
+    except Exception as e:
+        log(f"❌ Ошибка: {e}")
+
+    # сохраняем в файл истории
+    LOG_DIR = "logs_data"
+    os.makedirs(LOG_DIR, exist_ok=True)
+    now = datetime.now().strftime("%Y-%m-%d_%H-%M")
+    history_path = os.path.join(LOG_DIR, f"history_{now}.txt")
+    with open(history_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(LOG_STORE))
