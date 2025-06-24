@@ -21,10 +21,14 @@ POLL_ATTEMPTS = 18
 LOG_STORE = []
 
 def log_message(msg):
-    print(msg)
-    LOG_STORE.append(f"{datetime.now():%H:%M:%S} — {msg}")
-    if len(LOG_STORE) > 500:
+    timestamped = f"{datetime.now():%H:%M:%S} — {msg}"
+    print(timestamped)
+    LOG_STORE.append(timestamped)
+    if len(LOG_STORE) > 200:
         LOG_STORE.pop(0)
+    with open("logs_data/latest.log", "a", encoding="utf-8") as f:
+        f.write(timestamped + "\n")
+    
 # ───────────────────── 1. vendorCode из Excel ───────────────────
 def load_vendor_codes(xlsx="articuls.xlsx") -> set[str]:
     df = pd.read_excel(xlsx, dtype=str)
@@ -36,16 +40,20 @@ def load_vendor_codes(xlsx="articuls.xlsx") -> set[str]:
 
 # ───────────────────── 2. тянем ВСЕ карточки с WB ─────────────────
 def wb_get_all_parts() -> list[dict]:
-    all_cards = []
     for filename in sorted(glob.glob("wb_cards_part*.json")):
         with open(filename, "r", encoding="utf-8") as f:
-            all_cards.extend(json.load(f))
-    print(f"✔ Загружено карточек из частей: {len(all_cards)}")
-    return all_cards
+            try:
+                for card in json.load(f):
+                    yield card
+            except Exception as e:
+                log_message(f"⛔ Ошибка чтения {filename}: {e}")
 
 # ───────────────────── 3. фильтр + сохранение ───────────────────
 def dump_filtered(cards, vcodes:set):
-    keep = [c for c in cards if str(c.get("vendorCode","")).strip() in vcodes]
+    keep = []
+    for c in cards:
+        if str(c.get("vendorCode", "")).strip() in vcodes:
+            keep.append(c)
     fname = f"wb_cards_{datetime.now():%Y-%m-%d}.json"
     pathlib.Path(fname).write_text(json.dumps(keep,ensure_ascii=False,indent=2),
                                    encoding="utf-8")
