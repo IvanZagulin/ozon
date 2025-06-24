@@ -313,9 +313,14 @@ def run_transfer(filepath):
             batch = wb_need[idx:idx + 100]
             oz_cards = []
             for wb in batch:
-                desc, typ = choose_cat(wb["title"])
-                attrs = get_attrs(desc, typ)
-                oz_cards.append(build_ozon_card(wb, desc, typ, attrs))
+                try:
+                    desc, typ = choose_cat(wb["title"])
+                    attrs = get_attrs(desc, typ)
+                    oz_cards.append(build_ozon_card(wb, desc, typ, attrs))
+                except Exception as e:
+                    log(f"[{wb.get('vendorCode')}] ⛔ Пропущен из-за ошибки: {e}")
+                    continue
+
 
             log(f"► Отправляю партию {idx // 100 + 1}: {len(oz_cards)} шт.")
             task = ozon_import_batch(oz_cards)
