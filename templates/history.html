@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>История импортов</title>
+</head>
+<body>
+  <h1>История импортов на Ozon</h1>
+  <ul>
+    {% for file in files %}
+      <li><a href="{{ url_for('view_history', filename=file) }}">{{ file }}</a></li>
+    {% endfor %}
+  </ul>
+  <a href="{{ url_for('index') }}">← Назад</a>
+</body>
+</html>
