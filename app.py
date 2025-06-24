@@ -36,5 +36,23 @@ def index():
 def logs():
     return "\n".join(LOG_STORE), 200, {"Cache-Control": "no-cache"}
 
+@app.route("/history")
+def history():
+    entries = []
+    for fname in sorted(os.listdir(LOG_DIR), reverse=True):
+        if fname.startswith("history_") and fname.endswith(".txt"):
+            entries.append(fname)
+    return render_template("history.html", files=entries)
+
+@app.route("/history/<filename>")
+def view_history(filename):
+    full_path = os.path.join(LOG_DIR, filename)
+    if os.path.exists(full_path):
+        with open(full_path, encoding="utf-8") as f:
+            content = f.read()
+        return f"<pre style='white-space: pre-wrap; font-family: monospace'>{content}</pre>"
+    return "Файл не найден", 404
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
