@@ -3,7 +3,7 @@ from werkzeug.utils import secure_filename
 from threading import Thread
 from main import run_transfer, log_message, LOG_STORE
 import os
-
+from flask import send_file
 UPLOAD_FOLDER = "uploads"
 LOG_DIR = "logs_data"
 
@@ -52,6 +52,20 @@ def view_history(filename):
             content = f.read()
         return f"<pre style='white-space: pre-wrap; font-family: monospace'>{content}</pre>"
     return "Файл не найден", 404
+
+
+@app.route("/history")
+def history_list():
+    files = sorted(glob.glob("logs_data/history_*.txt"), reverse=True)
+    links = [f"<li><a href='/history/view?file={os.path.basename(f)}'>{os.path.basename(f)}</a></li>" for f in files]
+    return f"<h2>История логов:</h2><ul>{''.join(links)}</ul>"
+
+@app.route("/history/view")
+def view_log():
+    file = request.args.get("file")
+    if not file or not os.path.exists(os.path.join("logs_data", file)):
+        return "Файл не найден", 404
+    return send_file(os.path.join("logs_data", file), mimetype="text/plain")
 
 
 if __name__ == "__main__":
