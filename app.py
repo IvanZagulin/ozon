@@ -1,13 +1,14 @@
-from flask import Flask, request, render_template, redirect, url_for
-import os
-from werkzeug.utils import secure_filename
-from main import load_vendor_codes, wb_get_all_parts as wb_get_all, dump_filtered
 from flask import Flask, request, render_template, redirect, url_for, jsonify
-from main import run_transfer, log_message, LOG_STORE
+from werkzeug.utils import secure_filename
 from threading import Thread
+from main import run_transfer, log_message, LOG_STORE
+import os
 
 UPLOAD_FOLDER = "uploads"
+LOG_DIR = "logs_data"
+
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(LOG_DIR, exist_ok=True)
 
 app = Flask(__name__)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
@@ -25,7 +26,6 @@ def index():
             file.save(filepath)
 
             # Асинхронный запуск импорта
-            from threading import Thread
             Thread(target=run_transfer, args=(filepath,)).start()
 
             log = f"🚀 Импорт запущен. Логи появятся ниже."
@@ -34,9 +34,7 @@ def index():
 
 @app.route("/logs")
 def logs():
-    return "\n".join(LOG_STORE)
-
-
+    return "\n".join(LOG_STORE), 200, {"Cache-Control": "no-cache"}
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
