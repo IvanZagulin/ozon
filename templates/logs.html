@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}История логов{% endblock %}
+{% block content %}
+  <h2>История логов</h2>
+  <ul>
+    {% for file in files %}
+      <li><a href="{{ url_for('log_detail', filename=file) }}">{{ file }}</a></li>
+    {% endfor %}
+  </ul>
+{% endblock %}
