@@ -337,7 +337,7 @@ def run_transfer(filepath):
 
             res_file = f"ozon_result_{task}.json"
             pathlib.Path(res_file).write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
-            log(f"✔ Завершена партия, лог сохранён в {res_file}")
+            log(f"✔ Завершена партия")
 
     except Exception as e:
         log(f"❌ Ошибка: {e}")
