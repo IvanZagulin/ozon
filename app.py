@@ -67,6 +67,36 @@ def view_log():
         return "Файл не найден", 404
     return send_file(os.path.join("logs_data", file), mimetype="text/plain")
 
+@app.route("/")
+def home():
+    return redirect(url_for("upload_page"))
+
+@app.route("/upload", methods=["GET", "POST"])
+def upload_page():
+    # логика загрузки файла и run_transfer
+    return render_template("upload.html", logs=LOG_STORE)
+
+@app.route("/logs")
+def logs_page():
+    # просмотр history_*.txt
+    history_files = sorted(os.listdir(LOG_DIR), reverse=True)
+    return render_template("logs.html", files=history_files)
+
+@app.route("/logs/<filename>")
+def log_detail(filename):
+    path = os.path.join(LOG_DIR, filename)
+    if not os.path.isfile(path):
+        return "Файл не найден", 404
+    with open(path, encoding="utf-8") as f:
+        content = f.read()
+    return render_template("log_detail.html", content=content, filename=filename)
+
+@app.route("/settings")
+def settings_page():
+    return render_template("settings.html")
+
+
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
