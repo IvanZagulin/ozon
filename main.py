@@ -227,7 +227,7 @@ def build_ozon_card(wb:dict, desc:int, typ:int, attrs:list[dict]) -> dict:
         existing.add(aid)
 
     ensure(4184, chars.get("isbn/issn") or root.get("isbn"))   # ISBN
-    ensure(4182, chars.get("автор")     or root.get("author")) # Автор
+    ensure(4182, chars.get("автор на обложке"))                 # Автор на обложке
     ensure(7,    root.get("brand"), True)                      # Издательство
 
     depth=int(round(float(dims.get("length",1))*10))
@@ -235,6 +235,15 @@ def build_ozon_card(wb:dict, desc:int, typ:int, attrs:list[dict]) -> dict:
     height=int(round(float(dims.get("height",1))*10))
     weight=int(round(float(dims.get("weightBrutto",.1))*1000))
     images=[p["big"] for p in wb.get("photos",[]) if p.get("big")][:15]
+
+    # обработка обложки
+    oblozhka_raw = chars.get("тип обложки") or root.get("тип обложки")
+    if oblozhka_raw:
+        oblozhka_raw = oblozhka_raw.lower()
+        if "твердая" in oblozhka_raw:
+            ensure(4450, "Твердый переплет", True)
+        elif "мягкая" in oblozhka_raw:
+            ensure(4450, "Мягкая обложка", True)
 
     return {
         "description_category_id": desc,
@@ -247,6 +256,7 @@ def build_ozon_card(wb:dict, desc:int, typ:int, attrs:list[dict]) -> dict:
         "dimension_unit":"mm",
         "weight": weight, "weight_unit":"g",
         "images": images,
+        "vat": "0.1",
         "attributes": oz,
     }
 
