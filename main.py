@@ -174,33 +174,9 @@ def build_ozon_card(wb:dict, desc:int, typ:int, attrs:list[dict]) -> dict:
              if isinstance(c["value"],list) else str(c["value"])
              for c in wb.get("characteristics",[])}
     dims  = wb.get("dimensions",{}) or {}
-  
-        
-    vat = None
-    for ch in wb.get("characteristics", []):
-        if ch.get("name", "").lower().strip() == "ставка ндс":
-            raw_vat = str(ch.get("value", "")).strip()
-            if isinstance(ch["value"], list):
-                raw_vat = ch["value"][0]
-            if raw_vat == "10":
-                vat = 0.1
-            elif raw_vat == "20":
-                vat = 0.2
-            break
 
-    def pick(name: str):
-        ln = name.lower()
-        if "автор на обложке" in ln:
-            return chars.get("автор") or root.get("author")
-
-        if "тип обложки" in ln or "обложка" in ln:
-            cover = chars.get("обложка", "").lower()
-            if "твёрд" in cover or "тверд" in cover:
-                return "Твердый переплет"
-            elif "мягк" in cover:
-                return "Мягкая обложка"
-            return None
-
+    def pick(name:str):
+        ln=name.lower()
         for ok, keys in RULES.items():
             if ok in ln:
                 for k in keys:
@@ -272,7 +248,6 @@ def build_ozon_card(wb:dict, desc:int, typ:int, attrs:list[dict]) -> dict:
         "weight": weight, "weight_unit":"g",
         "images": images,
         "attributes": oz,
-        "vat": vat if vat is not None else 0.1,
     }
 
 # 7. Импорт и polling
