@@ -189,33 +189,31 @@ def build_ozon_card(wb:dict, desc:int, typ:int, attrs:list[dict]) -> dict:
             break
 
     def pick(name: str):
-    ln = name.lower()
-    if "автор на обложке" in ln:
-        return chars.get("автор") or root.get("author")
+        ln = name.lower()
+        if "автор на обложке" in ln:
+            return chars.get("автор") or root.get("author")
 
-    if "тип обложки" in ln or "обложка" in ln:
-        cover = chars.get("обложка", "").lower()
-        if "твёрд" in cover or "тверд" in cover:
-            return "Твердый переплет"
-        elif "мягк" in cover:
-            return "Мягкая обложка"
+        if "тип обложки" in ln or "обложка" in ln:
+            cover = chars.get("обложка", "").lower()
+            if "твёрд" in cover or "тверд" in cover:
+                return "Твердый переплет"
+            elif "мягк" in cover:
+                return "Мягкая обложка"
+            return None
+
+        for ok, keys in RULES.items():
+            if ok in ln:
+                for k in keys:
+                    if chars.get(k): return chars[k]
+                    if root.get(k):  return root[k]
+        if ln in chars: return chars[ln]
+        if ln in root:  return root[ln]
+        if ln.startswith("издательство"): return wb.get("brand")
+        if "размеры, мм" in ln and dims:
+            return f"{dims.get('length',0)}x{dims.get('width',0)}x{dims.get('height',0)}"
+        if "вес товара, г" in ln and dims:
+            return str(int(round(float(dims.get("weightBrutto",.1))*1000)))
         return None
-
-    for ok, keys in RULES.items():
-        if ok in ln:
-            for k in keys:
-                if chars.get(k): return chars[k]
-                if root.get(k):  return root[k]
-    if ln in chars: return chars[ln]
-    if ln in root:  return root[ln]
-    if ln.startswith("издательство"): return wb.get("brand")
-    if "размеры, мм" in ln and dims:
-        return f"{dims.get('length',0)}x{dims.get('width',0)}x{dims.get('height',0)}"
-    if "вес товара, г" in ln and dims:
-        return str(int(round(float(dims.get("weightBrutto",.1))*1000)))
-    return None
-
-
 
     for ok, keys in RULES.items():
         if ok in ln:
