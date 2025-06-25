@@ -175,6 +175,22 @@ def build_ozon_card(wb:dict, desc:int, typ:int, attrs:list[dict]) -> dict:
              for c in wb.get("characteristics",[])}
     dims  = wb.get("dimensions",{}) or {}
 
+    # ставка НДС, если указана
+    vat = None
+    for ch in wb.get("characteristics", []):
+        if str(ch.get("name", "")).lower().strip() == "ставка ндс":
+            raw = ch.get("value")
+            if isinstance(raw, list):
+                raw = raw[0] if raw else ""
+            raw = str(raw).strip()
+            if raw == "10":
+                vat = "0.1"
+            elif raw == "20":
+                vat = "0.2"
+            elif raw == "0":
+                vat = "0"
+            break
+
     def pick(name:str):
         ln=name.lower()
         for ok, keys in RULES.items():
@@ -237,7 +253,10 @@ def build_ozon_card(wb:dict, desc:int, typ:int, attrs:list[dict]) -> dict:
     images=[p["big"] for p in wb.get("photos",[]) if p.get("big")][:15]
 
     # обработка обложки
-    oblozhka_raw = chars.get("тип обложки") or root.get("тип обложки")
+    oblozhka_raw = (
+        chars.get("тип обложки") or chars.get("обложка") or
+        root.get("тип обложки") or root.get("обложка")
+    )
     if oblozhka_raw:
         oblozhka_raw = oblozhka_raw.lower()
         if "твердая" in oblozhka_raw:
@@ -256,7 +275,7 @@ def build_ozon_card(wb:dict, desc:int, typ:int, attrs:list[dict]) -> dict:
         "dimension_unit":"mm",
         "weight": weight, "weight_unit":"g",
         "images": images,
-        "vat": "0.1",
+        "vat": vat or "0.1",
         "attributes": oz,
     }
 
