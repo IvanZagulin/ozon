@@ -174,6 +174,18 @@ def build_ozon_card(wb:dict, desc:int, typ:int, attrs:list[dict]) -> dict:
              if isinstance(c["value"],list) else str(c["value"])
              for c in wb.get("characteristics",[])}
     dims  = wb.get("dimensions",{}) or {}
+  
+    vat = None
+for ch in wb.get("characteristics", []):
+    if ch.get("name", "").lower().strip() == "Ставка НДС":
+        raw_vat = str(ch.get("value", "")).strip()
+        if isinstance(ch["value"], list):
+            raw_vat = ch["value"][0]
+        if raw_vat == "10":
+            vat = 0.1
+        elif raw_vat == "20":
+            vat = 0.2
+        break
 
     def pick(name:str):
     ln = name.lower()
@@ -259,6 +271,7 @@ def build_ozon_card(wb:dict, desc:int, typ:int, attrs:list[dict]) -> dict:
         "weight": weight, "weight_unit":"g",
         "images": images,
         "attributes": oz,
+        "vat": vat if vat is not None else 0.1,
     }
 
 # 7. Импорт и polling
