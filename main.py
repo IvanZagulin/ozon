@@ -215,20 +215,6 @@ def build_ozon_card(wb:dict, desc:int, typ:int, attrs:list[dict]) -> dict:
             return str(int(round(float(dims.get("weightBrutto",.1))*1000)))
         return None
 
-    for ok, keys in RULES.items():
-        if ok in ln:
-            for k in keys:
-                if chars.get(k): return chars[k]
-                if root.get(k):  return root[k]
-    if ln in chars: return chars[ln]
-    if ln in root:  return root[ln]
-    if ln.startswith("издательство"): return wb.get("brand")
-    if "размеры, мм" in ln and dims:
-        return f"{dims.get('length',0)}x{dims.get('width',0)}x{dims.get('height',0)}"
-    if "вес товара, г" in ln and dims:
-        return str(int(round(float(dims.get("weightBrutto",.1))*1000)))
-    return None
-
     oz, existing = [], set()
 
     # основные атрибуты
